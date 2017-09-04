@@ -1,56 +1,92 @@
-angular.module('starter.controllers', [])
+angular.module('app.controllers', [])
+  
+.controller('homeCtrl', ['$scope', '$state', '$stateParams', '$ionicPopup', '$ionicListDelegate', 'FavoritesService', // The following is the constructor function for this page's controller. See https://docs.angularjs.org/guide/controller
+// You can include any angular dependencies as parameters for this function
+// TIP: Access Route Parameters for your page via $stateParams.parameterName
+function ($scope, $state, $stateParams, $ionicPopup, $ionicListDelegate, FavoritesService) {
+    
+    $scope.devices = FavoritesService.model.devices;
+    $scope.data = {
+        address: '',
+        port: ''
+    };
 
-.controller('AppCtrl', function($scope, $ionicModal, $timeout) {
+    $scope.delete = function (index) {
+        $ionicListDelegate.closeOptionButtons();
+        $ionicPopup.confirm({
+          title: 'Confirmation',
+          template: 'Are you sure?'
+        }).then(function (res) {
+          if (res) FavoritesService.deleteDevice(index);
+        });
+    };
+      
+    $scope.edit = function(index) {
+        $ionicListDelegate.closeOptionButtons();
+        $state.go('menu.edit', {'index': index});
+    } ;
+}])
+   
+.controller('menuCtrl', ['$scope', '$stateParams', // The following is the constructor function for this page's controller. See https://docs.angularjs.org/guide/controller
+// You can include any angular dependencies as parameters for this function
+// TIP: Access Route Parameters for your page via $stateParams.parameterName
+function ($scope, $stateParams) {
 
-  // With the new view caching in Ionic, Controllers are only called
-  // when they are recreated or on app start, instead of every page change.
-  // To listen for when this page is active (for example, to refresh data),
-  // listen for the $ionicView.enter event:
-  //$scope.$on('$ionicView.enter', function(e) {
-  //});
 
-  // Form data for the login modal
-  $scope.loginData = {};
+}])
+   
+.controller('settingsCtrl', ['$scope', '$rootScope', '$stateParams', '$translate', 'SettingsService', // The following is the constructor function for this page's controller. See https://docs.angularjs.org/guide/controller
+// You can include any angular dependencies as parameters for this function
+// TIP: Access Route Parameters for your page via $stateParams.parameterName
+function ($scope, $rootScope, $stateParams, $translate, SettingsService) {
 
-  // Create the login modal that we will use later
-  $ionicModal.fromTemplateUrl('templates/login.html', {
-    scope: $scope
-  }).then(function(modal) {
-    $scope.modal = modal;
-  });
+    $scope.settings = $rootScope.settings = SettingsService.model;
+    
+    $scope.onUpdateIntervalChange = function() {
+        SettingsService.setRefreshInterval($scope.settings.updateInterval);
+    };
+    
+    $scope.onLanguageChange = function() {
+        SettingsService.setLanguage($scope.settings.language);
+		$translate.use($scope.settings.language);
+    };
+}])
+   
+.controller('controlCtrl', ['$scope', '$state', '$stateParams', 'DeviceService', 'FavoritesService', // The following is the constructor function for this page's controller. See https://docs.angularjs.org/guide/controller
+// You can include any angular dependencies as parameters for this function
+// TIP: Access Route Parameters for your page via $stateParams.parameterName
+function ($scope, $state, $stateParams, DeviceService, FavoritesService) {
+    
+    var model = {
+        name: null,
+        address: $stateParams.address,
+        port: $stateParams.port
+    };
+    
+    $scope.fav = $stateParams.index > -1;
+    
+    $scope.device = DeviceService.model = $scope.fav ? FavoritesService.getDevice($stateParams.index) : model;
+    
+    $scope.move = DeviceService.move;
+    
+    $scope.stop = DeviceService.stop;
+    
+    $scope.toggleFavorites = function() {
+        $scope.fav ? FavoritesService.deleteDevice($stateParams.index) : FavoritesService.addDevice($scope.device);
+        $scope.fav = !$scope.fav;
+    };
+}])
+   
+.controller('editCtrl', ['$scope', '$stateParams', '$ionicHistory', 'FavoritesService', // The following is the constructor function for this page's controller. See https://docs.angularjs.org/guide/controller
+// You can include any angular dependencies as parameters for this function
+// TIP: Access Route Parameters for your page via $stateParams.parameterName
+function ($scope, $stateParams, $ionicHistory, FavoritesService) {
 
-  // Triggered in the login modal to close it
-  $scope.closeLogin = function() {
-    $scope.modal.hide();
-  };
-
-  // Open the login modal
-  $scope.login = function() {
-    $scope.modal.show();
-  };
-
-  // Perform the login action when the user submits the login form
-  $scope.doLogin = function() {
-    console.log('Doing login', $scope.loginData);
-
-    // Simulate a login delay. Remove this and replace with your login
-    // code if using a login system
-    $timeout(function() {
-      $scope.closeLogin();
-    }, 1000);
-  };
-})
-
-.controller('PlaylistsCtrl', function($scope) {
-  $scope.playlists = [
-    { title: 'Reggae', id: 1 },
-    { title: 'Chill', id: 2 },
-    { title: 'Dubstep', id: 3 },
-    { title: 'Indie', id: 4 },
-    { title: 'Rap', id: 5 },
-    { title: 'Cowbell', id: 6 }
-  ];
-})
-
-.controller('PlaylistCtrl', function($scope, $stateParams) {
-});
+    $scope.data = FavoritesService.getDevice($stateParams.index);
+    
+    $scope.save = function() {
+        FavoritesService.modifyDevice($stateParams.index, $scope.data);
+        $ionicHistory.goBack();
+    };
+}])
+ 
